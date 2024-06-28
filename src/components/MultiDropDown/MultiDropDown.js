@@ -4,7 +4,7 @@ import MultiSelect from 'react-native-multiple-select';
 import {View,  StyleSheet} from 'react-native';
 
 export default function MultiDropDown(props)  {
-    let {data, onSelect, selectedItems, displayKey, dropDownStyle, showSelectedItems} = props;
+    let {data, onSelect, selectedItems, displayKey, dropDownStyle, showSelectedItems, defaultButtonText} = props;
 
     selectedItems = selectedItems.map(i=> i.toString());
     data = data.map(i=> {
@@ -30,8 +30,8 @@ export default function MultiDropDown(props)  {
            ico
           onSelectedItemsChange={onSelect}
           selectedItems={selectedItems}
-          selectText="  Select common allergic content"
-          searchInputPlaceholderText="Search common allergic content..."
+          selectText={defaultButtonText}
+          searchInputPlaceholderText="Search..."
           onChangeInput={ (text)=> {}}
           // altFontFamily="ProximaNova-Light"
           tagRemoveIconColor="black"

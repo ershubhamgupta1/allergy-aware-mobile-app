@@ -14,7 +14,7 @@ export default function DrawerContainer(props) {
     <View style={styles.content}>
       <View style={styles.container}>
         <MenuButton
-          title="HOME"
+          title="Home"
           icon={<FontAwesome name="home" size={20}/>}
           onPress={() => {
             navigation.navigate("Home");
@@ -22,10 +22,18 @@ export default function DrawerContainer(props) {
           }}
         />
         <MenuButton
-          title="CAMERA"
-          icon={<FontAwesome name="plus-circle" size={20}/>}
+          title="Camera"
+          icon={<FontAwesome name="camera" size={20}/>}
           onPress={() => {
             navigation.navigate("Camera");
+            navigation.closeDrawer();
+          }}
+        />
+        <MenuButton
+          title="User Profile"
+          icon={<FontAwesome name="user" size={20}/>}
+          onPress={() => {
+            navigation.navigate("Profile");
             navigation.closeDrawer();
           }}
         />

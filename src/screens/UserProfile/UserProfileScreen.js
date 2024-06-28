@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useLayoutEffect } from 'react'
 import { Image, Text, TextInput, TouchableOpacity, View, Button } from 'react-native'
 import { db } from '../../firebase/config.js';
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getDoc, setDoc, doc } from "firebase/firestore";
+import { getDoc, setDoc, doc, updateDoc } from "firebase/firestore";
 
 import styles from './styles.js';
 import MultiSelectDropdown from '../../components/MultiDropDown/MultiDropDown'
@@ -16,6 +16,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from '../../firebase/config';
 import * as FileSystem from 'expo-file-system';
 const storage = getStorage(app);
+import MenuImage from "../../components/MenuImage/MenuImage";
 
 const allergicIngredients = [
     "Peanuts", "Tree nuts", "Milk", "Eggs", "Soybeans", "Wheat", "Fish", "Shellfish",
@@ -33,9 +34,113 @@ const allergicIngredients = [
     "Brazil nuts", "Pecans", "Pine nuts", "Ginkgo nuts", "Chestnuts", "Butternuts",
     "Kola nuts", "Hickory nuts", "Acorns", "Cocoa beans", "Quassia bark"
   ];
-
+  const commonDiseases = [
+    "Acne",
+    "Allergies",
+    "Alzheimer's disease",
+    "Anemia",
+    "Anxiety",
+    "Arthritis",
+    "Asthma",
+    "Atherosclerosis",
+    "Back pain",
+    "Bipolar disorder",
+    "Bladder infection",
+    "Bronchitis",
+    "Cancer",
+    "Celiac disease",
+    "Chronic obstructive pulmonary disease (COPD)",
+    "Chronic kidney disease",
+    "Chronic pain",
+    "Cirrhosis",
+    "Colds",
+    "Colitis",
+    "Conjunctivitis",
+    "Coronary artery disease",
+    "Crohn's disease",
+    "Cystic fibrosis",
+    "Dementia",
+    "Depression",
+    "Diabetes",
+    "Diarrhea",
+    "Diverticulitis",
+    "Ear infection",
+    "Eczema",
+    "Emphysema",
+    "Endometriosis",
+    "Epilepsy",
+    "Fibromyalgia",
+    "Flu",
+    "Gallstones",
+    "Gastritis",
+    "Gastroenteritis",
+    "Gastroesophageal reflux disease (GERD)",
+    "Glaucoma",
+    "Gout",
+    "Hay fever",
+    "Heart disease",
+    "Hepatitis",
+    "Hernia",
+    "Herpes",
+    "High blood pressure",
+    "High cholesterol",
+    "HIV/AIDS",
+    "Hyperthyroidism",
+    "Hypothyroidism",
+    "Irritable bowel syndrome (IBS)",
+    "Kidney stones",
+    "Leukemia",
+    "Liver disease",
+    "Lupus",
+    "Lyme disease",
+    "Malaria",
+    "Meningitis",
+    "Menopause",
+    "Migraine",
+    "Mononucleosis",
+    "Multiple sclerosis",
+    "Obesity",
+    "Obsessive-compulsive disorder (OCD)",
+    "Osteoarthritis",
+    "Osteoporosis",
+    "Pancreatitis",
+    "Parkinson's disease",
+    "Peptic ulcer",
+    "Pneumonia",
+    "Polycystic ovary syndrome (PCOS)",
+    "Prostate disease",
+    "Psoriasis",
+    "Rheumatoid arthritis",
+    "Rosacea",
+    "Schizophrenia",
+    "Sexually transmitted infections (STIs)",
+    "Shingles",
+    "Sinusitis",
+    "Skin cancer",
+    "Sleep apnea",
+    "Stroke",
+    "Thyroid disease",
+    "Tonsillitis",
+    "Tuberculosis",
+    "Ulcerative colitis",
+    "Urinary tract infection (UTI)",
+    "Varicose veins",
+    "Vertigo",
+    "Viral infections",
+    "Vitamin deficiency",
+    "Yeast infection",
+    "Zika virus",
+    "Zollinger-Ellison syndrome"
+];
   const getAllergicItems = ()=>{
     const items = allergicIngredients.map((name, i)=>{
+        return {id: i, name};
+    });
+    return items;
+  }
+
+  const getAvailableCommonDiseaseItems = ()=>{
+    const items = commonDiseases.map((name, i)=>{
         return {id: i, name};
     });
     return items;
@@ -48,9 +153,30 @@ const allergicIngredients = [
     return ids;
 }
 
+const getSelectedCommonDiseases = (items)=>{
+    const ids = items.map((selectedName, i)=> {
+        if(commonDiseases.includes(selectedName)) return commonDiseases.indexOf(selectedName);
+    })
+    return ids;
+}
+
 export default function UserProfileScreen({navigation}) {
     const [fullName, setFullName] = useState('');
     const [user, setUser] = useState({});
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+          headerLeft: () => (
+            <MenuImage
+              onPress={() => {
+                navigation.openDrawer();
+              }}
+            />
+          ),
+          headerRight: () => <View />,
+        });
+      }, []);
+    
     useEffect(()=>{
         (async () => {
             const auth = getAuth();
@@ -59,20 +185,20 @@ export default function UserProfileScreen({navigation}) {
                 const docRef = doc(db, "users", uid);
                 const docSnap = await getDoc(docRef);
                 const user = docSnap.data();
-                let initialSelectedItems = user && user.allergicInfo && getSelectedCommonAllergicContent(user.allergicInfo)
-                console.log("initialSelectedItems>>>>>========",initialSelectedItems);
+                let initialSelectedAllergicItems = user && user.allergicInfo && getSelectedCommonAllergicContent(user.allergicInfo)
+                let initialSelectedDiseasesItems = user && user.diseases && getSelectedCommonDiseases(user.diseases)
+
                 setUser(user);
-                setSelectedItems(initialSelectedItems);
+                setSelectedCommonDiseaseItems(initialSelectedDiseasesItems || []);
+                setSelectedCommonAllergicItems(initialSelectedAllergicItems || []);
             }
               })();
     }, []);
 
-    console.log("user?.allergicInfo>>>>>========", user?.allergicInfo);
+    const [selectedCommonAllergicItems, setSelectedCommonAllergicItems] = useState([]);
+    const [selectedCommonDiseaseItems, setSelectedCommonDiseaseItems] = useState([]);
 
-    const [selectedItems, setSelectedItems] = useState([])
-    console.log("selectedItems>>>>>========",selectedItems);
 
-    
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
@@ -82,25 +208,13 @@ export default function UserProfileScreen({navigation}) {
         navigation.navigate('Login')
     }
 
-    const onRegisterPress = () => {
-        if (password !== confirmPassword) {
-            alert("Passwords don't match.")
-            return
-        }
-        const auth = getAuth();
-        createUserWithEmailAndPassword(auth, email, password)
-            .then(async(response) => {
-                const uid = response.user.uid
-                const data = {id: uid, email, fullName };
-                await setDoc(doc(db, "users", uid), data);
-                navigation.navigate('Home', {user: data})
-            })
-            .catch((error) => {
-
-                if(error.code.includes('auth/email-already-in-use')) alert('Email already in use!');
-                else if(error.code.includes('auth/weak-password')) alert('Password should be atleast 6 characters!');
-                else alert(error.message);
-        });
+    const onSave = async() => {
+        const docRef = doc(db, "users", user.id.toString());
+        const payload = {};
+        payload.allergicInfo = selectedCommonAllergicItems.map(item=> allergicIngredients[item]);
+        payload.diseases = selectedCommonDiseaseItems.map(item=> commonDiseases[item]);
+        const res = await updateDoc(docRef, payload);
+        console.log('res=============', res);
     }
     const uriToBlob = async (uri) => {
         return await FileSystem.readAsStringAsync(uri, {
@@ -140,6 +254,9 @@ export default function UserProfileScreen({navigation}) {
             setImage(result.assets[0].uri);
         }
     }
+    console.log('selectedCommonDiseaseItems===========', selectedCommonDiseaseItems);
+    console.log('selectedCommonAllergicItems===========', selectedCommonAllergicItems);
+
     
     return (
         <View style={styles.container}>
@@ -169,12 +286,13 @@ export default function UserProfileScreen({navigation}) {
                     underlineColorAndroid="transparent"
                     autoCapitalize="none"
                 />
-                <MultiSelectDropdown showSelectedItems={true} dropDownStyle={{height: 100}} defaultButtonText='Select allergic ingredient if any' displayKey='name' data={getAllergicItems()} selectedItems={selectedItems} onSelect={(selectedIds)=>{
-                    setSelectedItems(selectedIds);
+                <MultiSelectDropdown showSelectedItems={true} dropDownStyle={{height: 100}} defaultButtonText=' Select disease if any' displayKey='name' data={getAvailableCommonDiseaseItems()} selectedItems={selectedCommonDiseaseItems} onSelect={(selectedIds)=>{
+                    setSelectedCommonDiseaseItems(selectedIds);
                 }} />
-                <View>
-                    <Tags selectedItems = {user.customAllergicInfo} />
-                </View>
+                <MultiSelectDropdown showSelectedItems={true} dropDownStyle={{height: 100}} defaultButtonText=' Select allergic ingredient if any' displayKey='name' data={getAllergicItems()} selectedItems={selectedCommonAllergicItems} onSelect={(selectedIds)=>{
+                    setSelectedCommonAllergicItems(selectedIds);
+                }} />
+                <Tags selectedItems = {user.customAllergicInfo} />
                 </View>
                 <View style={{flex:1}}>
                     <FileUploadComponent handleFileUpload={(uri)=>{
@@ -184,7 +302,7 @@ export default function UserProfileScreen({navigation}) {
                 <View style={{flex:1}}>
                     <TouchableOpacity
                         style={styles.button}
-                        onPress={() => onRegisterPress()}>
+                        onPress={() => onSave()}>
                         <Text style={styles.buttonTitle}>Save</Text>
                     </TouchableOpacity>
                 </View>

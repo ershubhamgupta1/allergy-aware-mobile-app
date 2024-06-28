@@ -3,8 +3,15 @@ import { app } from '../../firebase/config';
 
 import { CameraView, useCameraPermissions, Camera } from 'expo-camera';
 import { useState, useRef } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View, ImageBackground } from 'react-native';
+import { Button, StyleSheet, Text, TouchableOpacity, TouchableHighlight, View, ImageBackground } from 'react-native';
+import React, { useLayoutEffect } from "react";
+
 import * as FileSystem from 'expo-file-system';
+import MenuImage from "../../components/MenuImage/MenuImage";
+import { getAuth } from "firebase/auth";
+import { getDoc, setDoc, doc } from "firebase/firestore";
+import { db } from '../../firebase/config.js';
+
 const storage = getStorage(app);
 
 const products = [
@@ -23,6 +30,18 @@ export default function CameraComp(props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [previewVisible, setPreviewVisible] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <MenuImage
+          onPress={() => {
+            navigation.openDrawer();
+          }}
+        />
+      ),
+      headerRight: () => <View />,
+    });
+  }, []);
 
   if (!permission) {
     // Camera permissions are still loading.
@@ -80,37 +99,54 @@ async function takePicture() {
 
     // // })
     try{
-        console.log('storage-----------', uri);
-        // const response = await fetch(uri);
-        // console.log('response-----------', response);
+        const auth = getAuth();
+        const uid = auth?.currentUser?.uid;
+        if(uid){
+            const docRef = doc(db, "users", uid);
+            const docSnap = await getDoc(docRef);
+            const user = docSnap.data();
+            let allergenInfo = user.allergicInfo || [];
+            if(user.customAllergicInfo) allergenInfo= [...allergenInfo, ...user.customAllergicInfo];
+            let diseasesInfo = user.diseases || [];
 
-        // if (!response.ok) {
-        //   throw new Error('Failed to fetch image');
-        // }
-        // const blob = await uriToBlob('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtX8xtTEpzqiVoVCbaC24fZJE1Y5tf7ES7rA&s');
+        let formdata = new FormData();
+
+        formdata.append("allergies", JSON.stringify(user.allergicInfo))
+        formdata.append("conditions", JSON.stringify(diseasesInfo))
+        formdata.append("file", {uri: uri, name: 'image.jpg', type: 'image/jpeg'})
+
+        
+        fetch('https://allergyaware.onrender.com/api/check-health-risks',{
+            method: 'POST',
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            body: formdata
+            })
+            .then((response,aa) => response.text())
+            .then((result) => {
+                console.log("image uploaded", result);
+                navigation.navigate("ProductDetails", { productInfo: result });
+              })
+            .catch(err => {
+              console.log("err========", err);
+            }) 
+        }
+        return;
         const blobString = await uriToBlob(uri);
         const base64Response = await fetch(blobString);
-        console.log('after ftech--------');
         const blob = await base64Response.blob();
 
-        // const blob = await response.blob();
-        console.log('after blob-----------', blob, blob.size);
 
         const filename = uri.substring(uri.lastIndexOf('/') + 1);
-        console.log('after filename-----------', filename);
-    
         // Upload image using Firebase Storage SDKgs://react-native-hotel-f182c.appspot.com/allergic-app-ingredients
         const storageRef = ref(storage, `allergic-app-ingredients/${filename}`);
-        console.log('after ref-----------');
-
         await uploadBytes(storageRef, blob);
-        console.log('after uploaded-----------');
 
         const downloadURL = await getDownloadURL(storageRef);
         console.log('Image uploaded to Firebase:', downloadURL);
         // TODO call api to send the "downloadURL" and get the allergic details for each product used in image.
         // const products = fetch('example.com/get-allergic-details')
-        navigation.navigate("ProductDetails", { products });
 
     }
     catch(err){
@@ -140,50 +176,22 @@ async function takePicture() {
           >
             <View
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
+                // flex: 1,
+                flexDirection: "column",
               }}
             >
-              <TouchableOpacity
-                onPress={() => setPreviewVisible(false)}
-                style={{
-                  width: 130,
-                  height: 40,
-
-                  alignItems: "center",
-                  borderRadius: 4,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 20,
-                  }}
-                >
-                  Re-take
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                    uploadImageAsync(capturedImage.uri);
-                }}
-                style={{
-                  width: 130,
-                  height: 40,
-
-                  alignItems: "center",
-                  borderRadius: 4,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 20,
-                  }}
-                >
-                  Upload & Check details
-                </Text>
-              </TouchableOpacity>
+              <TouchableHighlight
+                    style={styles.submit}
+                    onPress={() => setPreviewVisible(false)}
+                    underlayColor='#fff'>
+                        <Text style={[16,styles.submitText]}>Re-Take</Text>
+                </TouchableHighlight>
+              <TouchableHighlight
+                    style={styles.submit}
+                    onPress={() => uploadImageAsync(capturedImage.uri)}
+                    underlayColor='#fff'>
+                        <Text style={[16,styles.submitText]}>Upload</Text>
+                </TouchableHighlight>
             </View>
           </View>
         </ImageBackground>
@@ -202,25 +210,6 @@ async function takePicture() {
               flexDirection: "row",
             }}
           >
-            {/* <TouchableOpacity
-              style={{
-                position: "absolute",
-                top: "5%",
-                left: "5%",
-              }}
-              onPress={() => {
-                setType(
-                  type === Camera.Constants.Type.back
-                    ? Camera.Constants.Type.front
-                    : Camera.Constants.Type.back
-                );
-              }}
-            >
-              <Text style={{ fontSize: 20, marginBottom: 10, color: "white" }}>
-                {" "}
-                Flip{" "}
-              </Text>
-            </TouchableOpacity> */}
             <View
               style={{
                 position: "absolute",
@@ -257,23 +246,6 @@ async function takePicture() {
     </View>
   );
 }
-//   return (
-//     <View style={styles.container}>
-//       <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-//         <View style={styles.buttonContainer}>
-//           <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-//             <Text style={styles.text}>Flip Camera</Text>
-
-//           </TouchableOpacity>
-//           <TouchableOpacity style={styles.button} onPress={takePicture}>
-//             <Text style={styles.text}>Take Picture</Text>
-
-//           </TouchableOpacity>
-//         </View>
-//       </CameraView>
-//     </View>
-//   );
-// }
 
 const styles = StyleSheet.create({
   container: {
@@ -299,4 +271,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
+  submit: {
+    marginRight: 40,
+    marginLeft: 40,
+    marginTop: 10,
+    paddingTop: 20,
+    paddingBottom: 20,
+    backgroundColor: '#68a0cf',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  submitText: {
+    color: '#fff',
+    textAlign: 'center',
+  }
 });

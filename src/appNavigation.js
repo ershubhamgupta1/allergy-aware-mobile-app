@@ -64,10 +64,10 @@ function MainNavigator() {
     >
     { user ? (
       <>
+        <Stack.Screen name='Home' component={HomeScreen} options={{ headerTitle: (props) => <Header {...props} title='Home' /> }} />
         <Stack.Screen name='Camera' component={CameraScreen} options={{ headerTitle: (props) => <Header {...props} title='Camera' /> }}/>
         <Stack.Screen name='ProductDetails' component={ProductTabs} options={{ headerTitle: (props) => <Header {...props} title='Product' /> }} />
         <Stack.Screen name='Profile' component={UserProfileScreen} options={{ headerTitle: (props) => <Header {...props} title='Profile' /> }} />
-        <Stack.Screen name='Home' component={HomeScreen} options={{ headerTitle: (props) => <Header {...props} title='Home' /> }} />
       </>
     ) : (
           <>
