@@ -1,5 +1,4 @@
 
-
 <p align="center">
     <a href="https://reactnative.dev/docs/getting-started" alt="React-native">
         <img src="https://img.shields.io/badge/react_native-0.74-green" /></a>
@@ -29,4 +28,13 @@ This project is mobile application developed in react-native using expo. This ap
 ##############################
 
 <h2>Screenshots of app</h2>
+
+<div align="center">
+    <img src="/screenshots/signup.png" width="200px"</img> 
+    <img src="/screenshots/login.png" width="200px"</img> 
+    <img src="/screenshots/home.png" width="200px"</img> 
+    <img src="/screenshots/profile.png" width="200px"</img> 
+    <img src="/screenshots/camera.png" width="200px"</img> 
+    <img src="/screenshots/productDetail.jpg" width="200px"</img>     
+</div>
 
