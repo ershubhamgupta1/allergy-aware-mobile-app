@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useLayoutEffect } from 'react'
 import { Image, Text, TextInput, TouchableOpacity, View, Button } from 'react-native'
 import { db } from '../../firebase/config.js';
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getDoc, setDoc, doc, updateDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getDoc, doc, updateDoc } from "firebase/firestore";
 
 import styles from './styles.js';
 import MultiSelectDropdown from '../../components/MultiDropDown/MultiDropDown'
@@ -187,8 +187,12 @@ export default function UserProfileScreen({navigation}) {
                 const user = docSnap.data();
                 let initialSelectedAllergicItems = user && user.allergicInfo && getSelectedCommonAllergicContent(user.allergicInfo)
                 let initialSelectedDiseasesItems = user && user.diseases && getSelectedCommonDiseases(user.diseases)
-
+                
+                initialSelectedDiseasesItems = initialSelectedDiseasesItems.filter(item => !!item);
+                initialSelectedAllergicItems = initialSelectedAllergicItems.filter(item => !!item);
                 setUser(user);
+                setFullName(user.fullName);
+
                 setSelectedCommonDiseaseItems(initialSelectedDiseasesItems || []);
                 setSelectedCommonAllergicItems(initialSelectedAllergicItems || []);
             }
@@ -198,23 +202,16 @@ export default function UserProfileScreen({navigation}) {
     const [selectedCommonAllergicItems, setSelectedCommonAllergicItems] = useState([]);
     const [selectedCommonDiseaseItems, setSelectedCommonDiseaseItems] = useState([]);
 
-
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [confirmPassword, setConfirmPassword] = useState('')
     const [image, setImage] = useState(null);
 
-    const onFooterLinkPress = () => {
-        navigation.navigate('Login')
-    }
 
     const onSave = async() => {
         const docRef = doc(db, "users", user.id.toString());
-        const payload = {};
+        const payload = {fullName};
         payload.allergicInfo = selectedCommonAllergicItems.map(item=> allergicIngredients[item]);
         payload.diseases = selectedCommonDiseaseItems.map(item=> commonDiseases[item]);
         const res = await updateDoc(docRef, payload);
-        console.log('res=============', res);
+        alert('Profile saved successfully')
     }
     const uriToBlob = async (uri) => {
         return await FileSystem.readAsStringAsync(uri, {
@@ -254,10 +251,6 @@ export default function UserProfileScreen({navigation}) {
             setImage(result.assets[0].uri);
         }
     }
-    console.log('selectedCommonDiseaseItems===========', selectedCommonDiseaseItems);
-    console.log('selectedCommonAllergicItems===========', selectedCommonAllergicItems);
-
-    
     return (
         <View style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false}
@@ -271,8 +264,11 @@ export default function UserProfileScreen({navigation}) {
                     style={styles.input}
                     placeholder='Full Name'
                     placeholderTextColor="#aaaaaa"
-                    onChangeText={(text) => setFullName(text)}
-                    value={user.fullName}
+                    onChangeText={(text) => {
+                        console.log('text========', text);
+                        setFullName(text)
+                    }}
+                    value={fullName}
                     underlineColorAndroid="transparent"
                     autoCapitalize="none"
                 />
@@ -281,7 +277,6 @@ export default function UserProfileScreen({navigation}) {
                     style={styles.input}
                     placeholder='E-mail'
                     placeholderTextColor="#aaaaaa"
-                    onChangeText={(text) => setEmail(text)}
                     value={user.email}
                     underlineColorAndroid="transparent"
                     autoCapitalize="none"
@@ -295,9 +290,51 @@ export default function UserProfileScreen({navigation}) {
                 <Tags selectedItems = {user.customAllergicInfo} />
                 </View>
                 <View style={{flex:1}}>
-                    <FileUploadComponent handleFileUpload={(uri)=>{
-                        uploadImageAsync(uri);
-                    }} />
+
+
+
+                    <FileUploadComponent handleFileUpload={async(uri)=>{
+                            const url = await uploadImageAsync(uri);
+                            let formdata = new FormData();
+
+                            formdata.append("file", {uri: uri, name: 'image.jpg', type: 'image/jpeg'})
+                            fetch('https://allergyaware.onrender.com/api/analyze-prescription', {
+                                method: 'POST',
+                                headers: {
+                                },
+                                'Content-Type': 'multipart/form-data',
+                                body: formdata
+                            })
+                            .then((response, aa) => response.text())
+                            .then((result) => {
+                            if(result) result = JSON.parse(result);
+
+                            if(result && (result.potentialHealthConditions || result.potentialAllergies)){
+                            let potentialHealthConditions  = result.potentialAllergies && getSelectedCommonDiseases(result.potentialAllergies)
+                            let potentialAllergies = result.potentialHealthConditions && getSelectedCommonDiseases(result.potentialHealthConditions)
+                            potentialHealthConditions = potentialHealthConditions.filter(item => !!item);
+
+                            potentialAllergies = potentialAllergies.filter(item => !!item);
+                            let finalDieases = [];
+                            if(potentialHealthConditions){
+                                finalDieases = [...finalDieases, ...potentialHealthConditions];
+                            }
+                            if(potentialAllergies) {
+                            finalDieases = [...finalDieases, ...potentialAllergies];
+                            }
+                            setSelectedCommonDiseaseItems(finalDieases);
+                            }
+
+                            else{
+                            alert('There is some error in image processing, can you Try again!')
+                            }
+                            })
+                            .catch(err => {
+                            setLoading(false);
+                            console.log("err========", err);
+                            })
+                        }}
+                    />
                 </View>
                 <View style={{flex:1}}>
                     <TouchableOpacity

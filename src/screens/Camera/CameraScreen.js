@@ -11,6 +11,7 @@ import MenuImage from "../../components/MenuImage/MenuImage";
 import { getAuth } from "firebase/auth";
 import { getDoc, setDoc, doc } from "firebase/firestore";
 import { db } from '../../firebase/config.js';
+import LoadingBar from '../../components/LoadingBar/LoadingBar.js';
 
 const storage = getStorage(app);
 
@@ -25,6 +26,8 @@ const products = [
 export default function CameraComp(props) {
   const { navigation, route } = props;
   const [facing, setFacing] = useState('back');
+  const [isLoading, setLoading] = useState(false);
+
   const cameraRef = useRef(null);
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -82,6 +85,7 @@ async function takePicture() {
       }
   }
   async function uploadImageAsync(uri) {
+    setLoading(true);
     // const response = await fetch(uri);
     // const blob = await response.blob();
     // const filename = uri.substring(uri.lastIndexOf('/') + 1);
@@ -125,12 +129,14 @@ async function takePicture() {
             })
             .then((response,aa) => response.text())
             .then((result) => {
+                setLoading(false);
                 console.log("image uploaded", result);
                 navigation.navigate("ProductDetails", { productInfo: result });
               })
             .catch(err => {
               console.log("err========", err);
-            }) 
+              setLoading(false);
+            });
         }
         return;
         const blobString = await uriToBlob(uri);
@@ -153,6 +159,8 @@ async function takePicture() {
         console.log('err-----------', err);
     }
   }
+
+  if(isLoading) return <LoadingBar />;
   return (
     <View
       style={{

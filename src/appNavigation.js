@@ -32,7 +32,6 @@ function MainNavigator() {
           const docRef = doc(db, "users", uid);
           const docSnap = await getDoc(docRef);
           const userInfo = docSnap.data();
-          console.log('userInfo=========', userInfo);
           userInfo && setUser(userInfo);
           // usersRef
           //   .doc(user.uid)

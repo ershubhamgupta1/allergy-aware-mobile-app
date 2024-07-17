@@ -48,7 +48,6 @@ const DocumentUpload = ({handleFileUpload}) => {
       alert('Failed to upload document');
     }
   };
-  console.log('selectedDocument===========', selectedDocument);
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.button} onPress={handlePickDocument}>

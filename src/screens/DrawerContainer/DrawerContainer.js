@@ -8,7 +8,6 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 
 export default function DrawerContainer(props) {
-  console.log('enter in d container--------')
   const { navigation } = props;
   return (
     <View style={styles.content}>

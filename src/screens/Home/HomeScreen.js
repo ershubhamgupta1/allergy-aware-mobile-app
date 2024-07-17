@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useEffect } from "react";
-import { FlatList, Text, View, TouchableOpacity, TouchableHighlight, StyleSheet } from "react-native";
+import { Text, View, Image, TouchableHighlight, StyleSheet } from "react-native";
 import MenuImage from "../../components/MenuImage/MenuImage";
 
 export default function HomeScreen(props) {
@@ -18,9 +18,15 @@ export default function HomeScreen(props) {
       }, []);
     
   return (
-    <View>
-        <Text style={{marginHorizontal: 20, marginVertical: 20, fontSize: 16, fontWeight: 'bold'}}>
-            Take Picture of product to get the allergic detail.            
+    <View style={{flex: 1, width: '100%'}}>
+        <View style={{width: '100%', alignItems: 'center', backgroundColor: 'lightgrey', paddingVertical: 40}}>
+            <Image
+                style={ {height: 200, width: 200}}
+                source={require('../../../assets/icon.png')}
+            />
+        </View>
+        <Text style={{marginLeft: 40, marginVertical: 20, fontSize: 16, fontWeight: 'bold'}}>
+            Take picture of product to get the allergic detail.            
         </Text>
         <TouchableHighlight
             style={styles.submit}
